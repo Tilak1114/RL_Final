@@ -28,25 +28,26 @@ class Critic(nn.Module):
 class Actor(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, learning_rate=3e-4):
         super(Actor, self).__init__()
+        self.learning_rate = learning_rate
         self.linear1 = nn.Linear(input_size, hidden_size)
         self.linear2 = nn.Linear(hidden_size, hidden_size)
         self.linear3 = nn.Linear(hidden_size, output_size)
 
-        self.optimizer = optim.Adam(self.parameters())
+        self.optimizer = optim.Adam(self.parameters(), self.learning_rate)
 
     def forward(self, state):
         x = F.relu(self.linear1(state))
         x = F.relu(self.linear2(x))
-        x = torch.tanh(self.linear3(x))
+        x = torch.relu(self.linear3(x))
         return x
 
 
-BATCH_SIZE = 8
-MAX_BUFFER = 50000
-MIN_BUFFER = 1000
-GAMMA = 0.99
+BATCH_SIZE = 128
+MAX_BUFFER = 200000
+MIN_BUFFER = 5000
+GAMMA = 0.98
 TAU = 1e-2
-EPISODES = 1000
+EPISODES = 25000
 
 
 # class Env():
@@ -159,7 +160,7 @@ class Agent():
             target_param.data.copy_(self.tau * param.data + (1.0 - self.tau) * target_param.data)
 
 
-env = gym.make("Pendulum-v1")
+env = gym.make("BipedalWalker-v3")
 
 noise = OUNoise(env.action_space)
 
