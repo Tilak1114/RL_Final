@@ -2,11 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7e6aef34-0ace-4274-84f0-ab7bd809475e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/ddpg_walker.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/td3_walker.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/td3_humanoid.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ddpg.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/ddpg.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/td3_walker.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/td3_walker.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,12 +79,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/td3_walker.py</url>
-          <line>148</line>
-          <option name="timeStamp" value="48" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/td3_walker.py</url>
-          <line>130</line>
+          <line>133</line>
           <option name="timeStamp" value="51" />
         </line-breakpoint>
       </breakpoints>

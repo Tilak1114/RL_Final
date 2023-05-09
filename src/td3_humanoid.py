@@ -6,10 +6,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torch.autograd import Variable
 import gym
-import json
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
+
+BATCH_SIZE = 128
+MAX_BUFFER = 200000
+MIN_BUFFER = 10000
+GAMMA = 0.98
+TAU = 1e-2
+POLICY_NOISE_SIGMA = 0.1
+POLICY_UPDATE_FREQ = 2
+EPISODES = 2000
 
 
 class Critic(nn.Module):
@@ -44,17 +52,6 @@ class Actor(nn.Module):
         x = F.relu(self.linear2(x))
         x = torch.tanh(self.linear3(x))
         return x
-
-
-BATCH_SIZE = 128
-MAX_BUFFER = 200000
-MIN_BUFFER = 10000
-GAMMA = 0.98
-TAU = 1e-2
-POLICY_NOISE_SIGMA = 0.1
-CRITIC_NOISE_SIGMA = 0.2
-POLICY_UPDATE_FREQ = 2
-EPISODES = 2000
 
 
 class Agent():
@@ -98,13 +95,16 @@ class Agent():
             self.memory.pop(0)
 
     def get_action(self, state, with_noise=True):
-        state = Variable(torch.from_numpy(state).float().unsqueeze(0))
+        state = Variable(torch.from_numpy(state).float().unsqueeze(0)).to(device)
         action = self.actor.forward(state)
         # action = action.detach().numpy()[0, 0]
-        action = action.detach().numpy()[0]
+
+        action = action.detach().cpu().numpy()[0]
+
         if with_noise:
             noise = np.random.normal(0, POLICY_NOISE_SIGMA, len(action))
             action += noise
+
         return np.clip(action, -1.0, 1.0)
 
     def train(self, current_episode):
@@ -114,15 +114,15 @@ class Agent():
         indices = np.random.choice(len(self.memory), self.batch_size, replace=True)
         batch = [self.memory[idx] for idx in indices]
 
-        states = torch.tensor([b["current_state"] for b in batch], dtype=torch.float32)
-        actions = torch.tensor([b["action"] for b in batch], dtype=torch.float32)
-        rewards = torch.tensor([b["reward"] for b in batch], dtype=torch.float32)
-        next_states = torch.tensor([b["next_state"] for b in batch], dtype=torch.float32)
-        terminals = torch.tensor([b["terminal"] for b in batch], dtype=torch.bool)
+        states = torch.tensor([b["current_state"] for b in batch], dtype=torch.float32).to(device)
+        actions = torch.tensor([b["action"] for b in batch], dtype=torch.float32).to(device)
+        rewards = torch.tensor([b["reward"] for b in batch], dtype=torch.float32).to(device)
+        next_states = torch.tensor([b["next_state"] for b in batch], dtype=torch.float32).to(device)
+        terminals = torch.tensor([b["terminal"] for b in batch], dtype=torch.bool).to(device)
 
         next_actions = agent.actor_target.forward(next_states)
         noise = np.random.normal(0, POLICY_NOISE_SIGMA, tuple(next_actions.shape))
-        noise = torch.tensor(noise)
+        noise = torch.tensor(noise).to(device)
         next_actions += noise
         next_actions = torch.clamp(next_actions, -1.0, 1.0)
 
@@ -167,7 +167,7 @@ class Agent():
                 target_param.data.copy_(self.tau * param.data + (1.0 - self.tau) * target_param.data)
 
 
-env = gym.make("BipedalWalker-v3")
+env = gym.make('Humanoid-v4')
 env = gym.wrappers.RecordVideo(env, 'video', episode_trigger=lambda x: x % 100 == 0)
 
 scores = []
@@ -185,27 +185,28 @@ for e in range(EPISODES):
         agent.update_buffer(state, action, reward, next_state, terminated)
         agent.train(e)
         score += reward
+
         state = next_state
 
     if e % 10 == 0:
         print("Episode " + str(e) + "/" + str(EPISODES) + ", Score: " + str(score))
 
-    if len(scores) > 200 and np.mean(scores[-200:]) >= 300:
-        break
-
     scores.append(score)
+
+    # if len(scores) > 100 and np.mean(scores[-100:]) >= 300:
+    #     break
+
+torch.save(agent.actor, "TD3_actor.pt")
 
 plt.plot(scores)
 plt.xlabel('Episode')
 plt.ylabel('Score')
-plt.savefig("td3_walker")
+plt.show()
 
-torch.save(agent.actor, "TD3_actor.pt")
+## Evaluate
 
-with open('output.json', 'w') as file:
-    json.dump(scores, file)
+env = gym.make("Humanoid-v4")
 
-env = gym.make("BipedalWalker-v3")
 env = gym.wrappers.RecordVideo(env, 'video', episode_trigger=lambda x: x % 1 == 0)
 
 for i in range(5):
@@ -215,5 +216,4 @@ for i in range(5):
     while not terminated and not truncated:
         action = agent.get_action(state, with_noise=False)
         state, reward, terminated, truncated, _ = env.step(action)
-        env.render()
         score += reward
